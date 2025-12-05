@@ -1,0 +1,15 @@
+name = "bidxaagui-api"
+main = "src/index.ts"
+compatibility_date = "2023-12-01"
+
+[dev]
+port = 8789
+local_protocol = "http"
+
+[vars]
+ENVIRONMENT = "development"
+
+[env.production]
+name = "bidxaagui-api-prod"
+route = "api.bidxaagui.com/*"
+ENVIRONMENT = "production"
