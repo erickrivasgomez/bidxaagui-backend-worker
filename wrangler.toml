@@ -1,4 +1,4 @@
-name = "bidxaagui-api"
+name = "bidxaagui-backend-worker"
 main = "src/index.ts"
 compatibility_date = "2023-12-01"
 
