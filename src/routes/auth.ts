@@ -81,7 +81,12 @@ export async function requestMagicLink(request: Request, env: Env): Promise<Resp
 
         if (!emailResult.success) {
             console.error('Failed to send email:', emailResult.error);
-            return errorResponse('Failed to send email. Please try again.', 500, env);
+            // Debugging: Check if key exists
+            if (!env.RESEND_API_KEY) {
+                console.error('RESEND_API_KEY is missing in environment variables!');
+                return errorResponse('Configuration Error: RESEND_API_KEY is missing.', 500, env);
+            }
+            return errorResponse(`Failed to send email: ${emailResult.error}`, 500, env);
         }
 
         console.log('Email sent successfully!');
