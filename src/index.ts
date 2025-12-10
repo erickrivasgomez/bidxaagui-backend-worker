@@ -170,6 +170,8 @@ export default {
           headers.set('etag', object.httpEtag);
           // Aggressive caching
           headers.set('Cache-Control', 'public, max-age=31536000');
+          // Enable CORS for images
+          headers.set('Access-Control-Allow-Origin', '*');
 
           return new Response(object.body, {
             headers,
