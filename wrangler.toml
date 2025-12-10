@@ -19,22 +19,18 @@ bucket_name = 'bidxaagui-editions'
 preview_bucket_name = 'bidxaagui-editions-preview'
 
 [vars]
-ENVIRONMENT = "development"
-RESEND_FROM_EMAIL = "noreply@bidxaagui.com"
-ADMIN_URL = "http://localhost:5173"
-FRONTEND_URL = "http://localhost:3000"
-MAGIC_LINK_EXPIRATION_MINUTES = "15"
-JWT_EXPIRATION_DAYS = "7"
-
-# Production environment
-[env.production]
-name = "bidxaagui-api-prod"
-route = "api.bidxaagui.com/*"
-
-[env.production.vars]
 ENVIRONMENT = "production"
 RESEND_FROM_EMAIL = "noreply@bidxaagui.com"
 ADMIN_URL = "https://admin.bidxaagui.com"
 FRONTEND_URL = "https://bidxaagui.com"
 MAGIC_LINK_EXPIRATION_MINUTES = "15"
 JWT_EXPIRATION_DAYS = "7"
+
+# Development environment (use with --env dev)
+[env.dev]
+name = "bidxaagui-backend-worker-dev"
+
+[env.dev.vars]
+ENVIRONMENT = "development"
+ADMIN_URL = "http://localhost:5173"
+FRONTEND_URL = "http://localhost:3000"
