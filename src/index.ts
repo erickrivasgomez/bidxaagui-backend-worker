@@ -130,6 +130,31 @@ export default {
         return await deleteEdition(request, env);
       }
 
+      // GET /api/images/:key (Serve R2 images)
+      // Supports slashes in key, e.g. /api/images/editions/123/page_1.webp
+      if (pathname.startsWith('/api/images/')) {
+        const key = pathname.replace('/api/images/', '');
+        try {
+          const object = await env.BUCKET.get(key);
+          if (!object) {
+            return errorResponse('Image not found', 404, env);
+          }
+
+          const headers = new Headers();
+          object.writeHttpMetadata(headers);
+          headers.set('etag', object.httpEtag);
+          // Aggressive caching
+          headers.set('Cache-Control', 'public, max-age=31536000');
+
+          return new Response(object.body, {
+            headers,
+          });
+        } catch (e) {
+          console.error('Error fetching image:', e);
+          return errorResponse('Error serving image', 500, env);
+        }
+      }
+
       // ============================================
       // FUTURE ROUTES
       // ============================================
