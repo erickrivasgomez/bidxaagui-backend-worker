@@ -2,9 +2,7 @@ import { Env } from '../types';
 
 // CORS headers
 export const corsHeaders = (env: Env) => ({
-    'Access-Control-Allow-Origin': env.ENVIRONMENT === 'production'
-        ? 'https://admin.bidxaagui.com'
-        : '*',
+    'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     'Access-Control-Max-Age': '86400',
