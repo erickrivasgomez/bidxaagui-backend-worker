@@ -9,6 +9,13 @@ import {
   unsubscribeNewsletter,
   exportSubscribers,
 } from './routes/subscribers';
+import {
+  getEditions,
+  createEdition,
+  deleteEdition,
+  uploadEditionPage,
+  getEditionPages
+} from './routes/editions';
 
 export default {
   async fetch(
@@ -92,6 +99,35 @@ export default {
       // DELETE /api/admin/subscribers/:id
       if (pathname.startsWith('/api/admin/subscribers/') && method === 'DELETE') {
         return await deleteSubscriber(request, env);
+      }
+
+      // ============================================
+      // PROTECTED ADMIN ROUTES - EDITIONS
+      // ============================================
+
+      // GET /api/admin/editions
+      if (pathname === '/api/admin/editions' && method === 'GET') {
+        return await getEditions(request, env);
+      }
+
+      // POST /api/admin/editions
+      if (pathname === '/api/admin/editions' && method === 'POST') {
+        return await createEdition(request, env);
+      }
+
+      // POST /api/admin/editions/:id/pages
+      if (pathname.match(/^\/api\/admin\/editions\/[^\/]+\/pages$/) && method === 'POST') {
+        return await uploadEditionPage(request, env);
+      }
+
+      // GET /api/admin/editions/:id/pages
+      if (pathname.match(/^\/api\/admin\/editions\/[^\/]+\/pages$/) && method === 'GET') {
+        return await getEditionPages(request, env);
+      }
+
+      // DELETE /api/admin/editions/:id
+      if (pathname.match(/^\/api\/admin\/editions\/[^\/]+$/) && method === 'DELETE') {
+        return await deleteEdition(request, env);
       }
 
       // ============================================

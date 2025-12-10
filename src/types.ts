@@ -14,6 +14,9 @@ export interface Env {
 
     // D1 Database
     DB: D1Database;
+
+    // R2 Bucket
+    BUCKET: R2Bucket;
 }
 
 // Database types
@@ -41,6 +44,25 @@ export interface Subscriber {
     subscribed_at: string;
     unsubscribed_at?: string;
     unsubscribe_token?: string;
+}
+
+export interface Edicion {
+    id: string;
+    titulo: string;
+    descripcion?: string;
+    cover_url?: string;
+    fecha?: string;
+    publicada: number; // 0 or 1
+    created_at: string;
+    updated_at: string;
+}
+
+export interface Pagina {
+    id: string;
+    edicion_id: string;
+    numero: number;
+    imagen_url: string;
+    created_at: string;
 }
 
 // JWT Payload

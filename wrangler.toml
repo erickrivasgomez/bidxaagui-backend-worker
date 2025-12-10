@@ -12,6 +12,12 @@ database_id = "40b0f825-0275-4041-9bb9-36aa286bbe6a"
 port = 8787
 local_protocol = "http"
 
+# R2 Bucket binding
+[[r2_buckets]]
+binding = 'BUCKET'
+bucket_name = 'bidxaagui-editions'
+preview_bucket_name = 'bidxaagui-editions-preview'
+
 [vars]
 ENVIRONMENT = "development"
 RESEND_FROM_EMAIL = "noreply@bidxaagui.com"
