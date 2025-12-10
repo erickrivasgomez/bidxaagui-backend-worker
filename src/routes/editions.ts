@@ -153,11 +153,15 @@ export async function uploadEditionPage(request: Request, env: Env): Promise<Res
 export async function getEditionPages(request: Request, env: Env): Promise<Response> {
     try {
         const url = new URL(request.url);
-        // Path: /api/admin/editions/:id/pages
+        // Supports: 
+        // /api/admin/editions/:id/pages
+        // /api/ediciones/:id/pages
         const parts = url.pathname.split('/');
-        const id = parts[parts.indexOf('editions') + 1];
+        // ID should be the segment before 'pages'
+        const pagesIndex = parts.indexOf('pages');
+        const id = parts[pagesIndex - 1];
 
-        if (!id) return errorResponse('ID de edición no válido', 400, env);
+        if (!id || pagesIndex === -1) return errorResponse('ID de edición no válido', 400, env);
 
         const { results } = await env.DB.prepare(
             'SELECT * FROM paginas WHERE edicion_id = ? ORDER BY numero ASC'
