@@ -3,7 +3,7 @@ import { jsonResponse, errorResponse, generateId } from '../lib/utils';
 import { sendEmail } from '../lib/email';
 
 // GET /api/admin/campaigns
-export async function getCampaigns(request: Request, env: Env): Promise<Response> {
+async function getCampaigns(request: Request, env: Env): Promise<Response> {
     try {
         const { results } = await env.DB.prepare(
             'SELECT * FROM campaigns ORDER BY created_at DESC'
@@ -17,7 +17,7 @@ export async function getCampaigns(request: Request, env: Env): Promise<Response
 }
 
 // POST /api/admin/campaigns
-export async function createCampaign(request: Request, env: Env): Promise<Response> {
+async function createCampaign(request: Request, env: Env): Promise<Response> {
     try {
         const { subject, preview_text, content } = await request.json() as any;
 
@@ -54,7 +54,7 @@ export async function createCampaign(request: Request, env: Env): Promise<Respon
 }
 
 // PUT /api/admin/campaigns/:id
-export async function updateCampaign(request: Request, env: Env): Promise<Response> {
+async function updateCampaign(request: Request, env: Env): Promise<Response> {
     try {
         const url = new URL(request.url);
         const id = url.pathname.split('/').pop()!; // Assumes clean URL handling in index.ts or simple split
@@ -95,7 +95,7 @@ export async function updateCampaign(request: Request, env: Env): Promise<Respon
 }
 
 // DELETE /api/admin/campaigns/:id
-export async function deleteCampaign(request: Request, env: Env): Promise<Response> {
+async function deleteCampaign(request: Request, env: Env): Promise<Response> {
     try {
         const url = new URL(request.url);
         const id = url.pathname.split('/').pop()!;
@@ -112,7 +112,7 @@ export async function deleteCampaign(request: Request, env: Env): Promise<Respon
 }
 
 // POST /api/admin/campaigns/:id/send-test
-export async function sendTestCampaign(request: Request, env: Env): Promise<Response> {
+async function sendTestCampaign(request: Request, env: Env): Promise<Response> {
     try {
         const url = new URL(request.url);
         const id = url.pathname.split('/').pop()!;
@@ -166,12 +166,13 @@ export async function sendTestCampaign(request: Request, env: Env): Promise<Resp
 }
 
 // POST /api/admin/campaigns/:id/send
-export async function sendCampaign(request: Request, env: Env): Promise<Response> {
+async function sendCampaign(request: Request, env: Env): Promise<Response> {
+    // Extract ID from URL first so it's available in the catch block
+    const url = new URL(request.url);
+    const parts = url.pathname.split('/');
+    const id = parts[parts.length - 2];
+    
     try {
-        const url = new URL(request.url);
-        // Extract ID. URL is /api/admin/campaigns/:id/send
-        const parts = url.pathname.split('/');
-        const id = parts[parts.length - 2];
 
         // Check for test email in body
         let testEmail: string | undefined;
@@ -258,11 +259,36 @@ export async function sendCampaign(request: Request, env: Env): Promise<Response
 
         return jsonResponse({
             success: true,
-            message: `Campaign processed. Success: ${successCount}, Failed: ${failCount}`
+            message: `Campaign sent: ${successCount} successful, ${failCount} failed`,
+            sent: successCount,
+            failed: failCount
         }, 200, env);
-
     } catch (error) {
         console.error('Error sending campaign:', error);
+        // Get the ID from the URL if we need to update the status
+        let campaignId = id;
+        if (!campaignId) {
+            const url = new URL(request.url);
+            const parts = url.pathname.split('/');
+            campaignId = parts[parts.length - 2];
+        }
+        
+        if (campaignId) {
+            await env.DB.prepare(
+                "UPDATE campaigns SET status = 'failed', updated_at = ? WHERE id = ?"
+            ).bind(new Date().toISOString(), campaignId).run();
+        }
+        
         return errorResponse('Failed to send campaign', 500, env);
     }
 }
+
+// Export all functions
+export {
+    getCampaigns,
+    createCampaign,
+    updateCampaign,
+    deleteCampaign,
+    sendCampaign,
+    sendTestCampaign
+};
