@@ -1,5 +1,6 @@
 import { Env } from './types';
 import { handleOptions, jsonResponse, errorResponse } from './lib/utils';
+import { requireAuth } from './lib/auth-middleware';
 import { requestMagicLink, verifyMagicLink } from './routes/auth';
 import {
   getSubscribers,
@@ -83,21 +84,29 @@ export default {
 
       // GET /api/admin/subscribers
       if (pathname === '/api/admin/subscribers' && method === 'GET') {
+        const auth = await requireAuth(request, env);
+        if (!auth.authorized) return auth.response!;
         return await getSubscribers(request, env);
       }
 
       // GET /api/admin/subscribers/stats
       if (pathname === '/api/admin/subscribers/stats' && method === 'GET') {
+        const auth = await requireAuth(request, env);
+        if (!auth.authorized) return auth.response!;
         return await getSubscriberStats(request, env);
       }
 
       // GET /api/admin/subscribers/export
       if (pathname === '/api/admin/subscribers/export' && method === 'GET') {
+        const auth = await requireAuth(request, env);
+        if (!auth.authorized) return auth.response!;
         return await exportSubscribers(request, env);
       }
 
       // DELETE /api/admin/subscribers/:id
       if (pathname.startsWith('/api/admin/subscribers/') && method === 'DELETE') {
+        const auth = await requireAuth(request, env);
+        if (!auth.authorized) return auth.response!;
         return await deleteSubscriber(request, env);
       }
 
@@ -107,26 +116,36 @@ export default {
 
       // GET /api/admin/editions
       if (pathname === '/api/admin/editions' && method === 'GET') {
+        const auth = await requireAuth(request, env);
+        if (!auth.authorized) return auth.response!;
         return await getEditions(request, env);
       }
 
       // POST /api/admin/editions
       if (pathname === '/api/admin/editions' && method === 'POST') {
+        const auth = await requireAuth(request, env);
+        if (!auth.authorized) return auth.response!;
         return await createEdition(request, env);
       }
 
       // POST /api/admin/editions/:id/pages
       if (pathname.match(/^\/api\/admin\/editions\/[^\/]+\/pages$/) && method === 'POST') {
+        const auth = await requireAuth(request, env);
+        if (!auth.authorized) return auth.response!;
         return await uploadEditionPage(request, env);
       }
 
       // GET /api/admin/editions/:id/pages
       if (pathname.match(/^\/api\/admin\/editions\/[^\/]+\/pages$/) && method === 'GET') {
+        const auth = await requireAuth(request, env);
+        if (!auth.authorized) return auth.response!;
         return await getEditionPages(request, env);
       }
 
       // DELETE /api/admin/editions/:id
       if (pathname.match(/^\/api\/admin\/editions\/[^\/]+$/) && method === 'DELETE') {
+        const auth = await requireAuth(request, env);
+        if (!auth.authorized) return auth.response!;
         return await deleteEdition(request, env);
       }
 
