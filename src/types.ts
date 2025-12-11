@@ -65,6 +65,21 @@ export interface Pagina {
     created_at: string;
 }
 
+// Campaign interface
+export interface Campaign {
+    id: string;
+    subject: string;
+    preview_text?: string;
+    content: string; // HTML content
+    status: 'draft' | 'scheduled' | 'sending' | 'sent' | 'failed';
+    sent_at?: string;
+    total_recipients: number;
+    successful_sends: number;
+    failed_sends: number;
+    created_at: string;
+    updated_at: string;
+}
+
 // JWT Payload
 export interface JWTPayload {
     userId: string;

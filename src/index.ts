@@ -17,6 +17,13 @@ import {
   uploadEditionPage,
   getEditionPages
 } from './routes/editions';
+import {
+  getCampaigns,
+  createCampaign,
+  updateCampaign,
+  deleteCampaign,
+  sendCampaign
+} from './routes/campaigns';
 
 export default {
   async fetch(
@@ -147,6 +154,45 @@ export default {
         const auth = await requireAuth(request, env);
         if (!auth.authorized) return auth.response!;
         return await deleteEdition(request, env);
+      }
+
+      // ============================================
+      // PROTECTED ADMIN ROUTES - CAMPAIGNS
+      // ============================================
+
+      // GET /api/admin/campaigns
+      if (pathname === '/api/admin/campaigns' && method === 'GET') {
+        const auth = await requireAuth(request, env);
+        if (!auth.authorized) return auth.response!;
+        return await getCampaigns(request, env);
+      }
+
+      // POST /api/admin/campaigns
+      if (pathname === '/api/admin/campaigns' && method === 'POST') {
+        const auth = await requireAuth(request, env);
+        if (!auth.authorized) return auth.response!;
+        return await createCampaign(request, env);
+      }
+
+      // PUT /api/admin/campaigns/:id
+      if (pathname.match(/^\/api\/admin\/campaigns\/[^\/]+$/) && method === 'PUT') {
+        const auth = await requireAuth(request, env);
+        if (!auth.authorized) return auth.response!;
+        return await updateCampaign(request, env);
+      }
+
+      // DELETE /api/admin/campaigns/:id
+      if (pathname.match(/^\/api\/admin\/campaigns\/[^\/]+$/) && method === 'DELETE') {
+        const auth = await requireAuth(request, env);
+        if (!auth.authorized) return auth.response!;
+        return await deleteCampaign(request, env);
+      }
+
+      // POST /api/admin/campaigns/:id/send
+      if (pathname.match(/^\/api\/admin\/campaigns\/[^\/]+\/send$/) && method === 'POST') {
+        const auth = await requireAuth(request, env);
+        if (!auth.authorized) return auth.response!;
+        return await sendCampaign(request, env);
       }
 
       // ============================================
