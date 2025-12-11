@@ -210,52 +210,74 @@ async function sendCampaign(request: Request, env: Env): Promise<Response> {
             return errorResponse('Campaign is not in a state to be sent', 400, env);
         }
 
-        // Fetch subscribers
+        // Get all subscribers for this campaign
         const { results: subscribers } = await env.DB.prepare(
-            'SELECT email, name FROM subscribers WHERE subscribed = 1'
-        ).all<{ email: string; name: string }>();
+            'SELECT email FROM subscribers WHERE subscribed = ?'
+        ).bind(1).all<{ email: string }>();
 
-        if (!subscribers || subscribers.length === 0) {
+        if (!subscribers?.length) {
             return errorResponse('No active subscribers found', 400, env);
         }
 
-        // Update status to sending
-        await env.DB.prepare(
-            "UPDATE campaigns SET status = 'sending', total_recipients = ?, sent_at = ? WHERE id = ?"
-        ).bind(subscribers.length, new Date().toISOString(), id).run();
-
+        // If test email is provided, only send to that email
+        const recipients = testEmail ? [{ email: testEmail }] : subscribers;
         let successCount = 0;
         let failCount = 0;
 
-        for (const sub of subscribers) {
-            try {
-                // Personalize content
-                const personalizedHtml = campaign.content.replace(/{{name}}/g, sub.name || 'Subscriber');
+        // Update campaign status to 'sending'
+        await env.DB.prepare(
+            "UPDATE campaigns SET status = 'sending', updated_at = ? WHERE id = ?"
+        ).bind(new Date().toISOString(), id).run();
 
-                const result = await sendEmail({
-                    to: sub.email,
-                    subject: campaign.subject,
-                    html: personalizedHtml,
-                    text: 'View this email in your browser.'
-                }, env);
+        // Process emails in batches of 3
+        const BATCH_SIZE = 3;
+        for (let i = 0; i < recipients.length; i += BATCH_SIZE) {
+            const batch = recipients.slice(i, i + BATCH_SIZE);
+            
+            // Process current batch in parallel
+            const batchResults = await Promise.allSettled(
+                batch.map(async (sub) => {
+                    try {
+                        const result = await sendEmail({
+                            to: sub.email,
+                            subject: campaign.subject,
+                            html: campaign.content,
+                            text: campaign.preview_text || campaign.subject,
+                        }, env);
+                        return { success: result.success, email: sub.email, error: result.error };
+                    } catch (error) {
+                        return { success: false, email: sub.email, error: error instanceof Error ? error.message : String(error) };
+                    }
+                })
+            );
 
-                if (result.success) {
-                    successCount++;
+            // Update counters
+            for (const result of batchResults) {
+                if (result.status === 'fulfilled') {
+                    const { success, error, email } = result.value;
+                    if (success) {
+                        successCount++;
+                    } else {
+                        failCount++;
+                        console.error(`Failed to send to ${email}:`, error);
+                    }
                 } else {
                     failCount++;
-                    console.error(`Failed to send to ${sub.email}: ${result.error}`);
+                    console.error('Error processing batch item:', result.reason);
                 }
-            } catch (e) {
-                failCount++;
-                console.error(`Exception sending to ${sub.email}:`, e);
+            }
+
+            // Small delay between batches to prevent rate limiting
+            if (i + BATCH_SIZE < recipients.length) {
+                await new Promise(resolve => setTimeout(resolve, 1000));
             }
         }
 
         // Update final status
         const finalStatus = failCount === subscribers.length ? 'failed' : 'sent';
         await env.DB.prepare(
-            "UPDATE campaigns SET status = ?, successful_sends = ?, failed_sends = ? WHERE id = ?"
-        ).bind(finalStatus, successCount, failCount, id).run();
+            "UPDATE campaigns SET status = ?, successful_sends = ?, failed_sends = ?, updated_at = ? WHERE id = ?"
+        ).bind(finalStatus, successCount, failCount, new Date().toISOString(), id).run();
 
         return jsonResponse({
             success: true,
