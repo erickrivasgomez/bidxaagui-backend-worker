@@ -111,7 +111,6 @@ export async function deleteCampaign(request: Request, env: Env): Promise<Respon
     }
 }
 
-// POST /api/admin/campaigns/:id/send
 // POST /api/admin/campaigns/:id/send-test
 export async function sendTestCampaign(request: Request, env: Env): Promise<Response> {
     try {

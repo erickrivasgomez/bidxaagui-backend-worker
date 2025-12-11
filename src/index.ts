@@ -189,18 +189,18 @@ export default {
         return await deleteCampaign(request, env);
       }
 
-      // POST /api/admin/campaigns/:id/send
-      if (pathname.match(/^\/api\/admin\/campaigns\/[^\/]+\/send$/) && method === 'POST') {
-        const auth = await requireAuth(request, env);
-        if (!auth.authorized) return auth.response!;
-        return await sendCampaign(request, env);
-      }
-
       // POST /api/admin/campaigns/:id/send-test
       if (pathname.match(/^\/api\/admin\/campaigns\/[^\/]+\/send-test$/) && method === 'POST') {
         const auth = await requireAuth(request, env);
         if (!auth.authorized) return auth.response!;
         return await sendTestCampaign(request, env);
+      }
+
+      // POST /api/admin/campaigns/:id/send
+      if (pathname.match(/^\/api\/admin\/campaigns\/[^\/]+\/send$/) && method === 'POST') {
+        const auth = await requireAuth(request, env);
+        if (!auth.authorized) return auth.response!;
+        return await sendCampaign(request, env);
       }
 
       // ============================================
