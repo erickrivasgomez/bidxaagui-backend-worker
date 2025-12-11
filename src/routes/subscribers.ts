@@ -1,4 +1,6 @@
 import { Env, Subscriber } from '../types';
+import { sendEmail } from '../lib/email';
+import { getWelcomeEmailHTML } from '../templates/welcomeEmail';
 import {
     errorResponse,
     successResponse,
@@ -238,9 +240,27 @@ export async function subscribeNewsletter(request: Request, env: Env): Promise<R
             'INSERT INTO subscribers (id, email, name, subscribed, subscribed_at, unsubscribe_token) VALUES (?, ?, ?, 1, ?, ?)'
         ).bind(subscriberId, email, name || null, getCurrentTimestamp(), unsubscribeToken).run();
 
-        // TODO: Send welcome email (optional)
+        // Send welcome email
+        try {
+            const { html, text } = getWelcomeEmailHTML(name || undefined);
+            const unsubscribeUrl = `https://${new URL(request.url).hostname}/api/newsletter/unsubscribe?token=${unsubscribeToken}`;
+            
+            const emailContent = {
+                html: html.replace(/\{\{unsubscribe_url\}\}/g, unsubscribeUrl),
+                text: text.replace(/\{\{unsubscribe_url\}\}/g, unsubscribeUrl)
+            };
+            
+            await sendEmail({
+                to: email,
+                subject: '¡Bienvenido a BIDXAAGUI!',
+                ...emailContent
+            }, env);
+        } catch (emailError) {
+            console.error('Error sending welcome email:', emailError);
+            // No fallamos la suscripción si hay un error en el correo
+        }
 
-        return successResponse('Subscribed successfully!', undefined, env);
+        return successResponse('¡Gracias por suscribirte! Revisa tu correo para confirmar.', undefined, env);
     } catch (error) {
         console.error('Error in subscribeNewsletter:', error);
         return errorResponse('Internal server error', 500, env);
