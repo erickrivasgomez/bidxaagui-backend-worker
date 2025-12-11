@@ -112,6 +112,61 @@ export async function deleteCampaign(request: Request, env: Env): Promise<Respon
 }
 
 // POST /api/admin/campaigns/:id/send
+// POST /api/admin/campaigns/:id/send-test
+export async function sendTestCampaign(request: Request, env: Env): Promise<Response> {
+    try {
+        const url = new URL(request.url);
+        const id = url.pathname.split('/').pop()!;
+        
+        // Get all admin emails
+        const { results: adminUsers } = await env.DB.prepare(
+            'SELECT email FROM admin_users'
+        ).all<{ email: string }>();
+        
+        const adminEmails = adminUsers.map(user => user.email);
+        
+        if (!adminEmails.length) {
+            return errorResponse('No admin users found', 400, env);
+        }
+
+        // Get campaign details
+        const campaign = await env.DB.prepare(
+            'SELECT * FROM campaigns WHERE id = ?'
+        ).bind(id).first<Campaign>();
+
+        if (!campaign) {
+            return errorResponse('Campaign not found', 404, env);
+        }
+
+        // Send test emails to all admin users
+        const results = await Promise.allSettled(
+            adminEmails.map(email => 
+                sendEmail({
+                    to: email,
+                    subject: `[TEST] ${campaign.subject}`,
+                    html: campaign.content,
+                    text: campaign.preview_text || campaign.subject,
+                }, env)
+            )
+        );
+
+        const successCount = results.filter(r => r.status === 'fulfilled').length;
+        const failCount = results.length - successCount;
+
+        return jsonResponse({
+            success: true,
+            message: `Test email sent to ${successCount} recipients. ${failCount} failed.`,
+            sent: successCount,
+            failed: failCount
+        }, 200, env);
+
+    } catch (error) {
+        console.error('Error sending test campaign:', error);
+        return errorResponse('Failed to send test campaign', 500, env);
+    }
+}
+
+// POST /api/admin/campaigns/:id/send
 export async function sendCampaign(request: Request, env: Env): Promise<Response> {
     try {
         const url = new URL(request.url);
