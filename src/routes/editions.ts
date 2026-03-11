@@ -29,10 +29,10 @@ export async function uploadEditionPDF(request: Request, env: Env): Promise<Resp
         }
         const contentBase64 = btoa(binary);
 
-        // Git Configuration
+        // Git Configuration - Correct Root Path
         const owner = 'erickrivasgomez';
         const repo = 'bidxaagui-portfolio';
-        const path = `landing-page/assets/documents/${file.name}`;
+        const path = `assets/documents/${file.name}`;
 
         let pdfUrl = '';
 
@@ -47,7 +47,8 @@ export async function uploadEditionPDF(request: Request, env: Env): Promise<Resp
                     contentBase64,
                     `Upload PDF for edition ${id}: ${file.name}`
                 );
-                // La URL final en el sitio estático será relativa o de github
+                // The correct URL for landing-page/pages/antroponomadas.html 
+                // to reach assets/documents/ at the root
                 pdfUrl = `../assets/documents/${file.name}`;
             } catch (githubError: any) {
                 console.error('GitHub Push Error:', githubError);
