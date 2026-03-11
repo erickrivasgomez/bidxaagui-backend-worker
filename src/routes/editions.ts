@@ -19,9 +19,15 @@ export async function uploadEditionPDF(request: Request, env: Env): Promise<Resp
 
         const file = fileEntry;
         const arrayBuffer = await file.arrayBuffer();
-        const contentBase64 = btoa(
-            new Uint8Array(arrayBuffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
-        );
+
+        // Memory-efficient Base64 conversion for Cloudflare Workers
+        const uint8 = new Uint8Array(arrayBuffer);
+        let binary = "";
+        const chunkSize = 8192;
+        for (let i = 0; i < uint8.length; i += chunkSize) {
+            binary += String.fromCharCode.apply(null, uint8.subarray(i, i + chunkSize) as any);
+        }
+        const contentBase64 = btoa(binary);
 
         // Git Configuration
         const owner = 'erickrivasgomez';
