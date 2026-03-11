@@ -17,6 +17,9 @@ export interface Env {
 
     // R2 Bucket
     BUCKET: R2Bucket;
+
+    // GitHub
+    GITHUB_TOKEN?: string;
 }
 
 // Database types
@@ -51,6 +54,7 @@ export interface Edicion {
     titulo: string;
     descripcion?: string;
     cover_url?: string;
+    pdf_url?: string;
     fecha?: string;
     publicada: number; // 0 or 1
     created_at: string;

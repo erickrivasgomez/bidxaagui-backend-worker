@@ -15,6 +15,7 @@ import {
   createEdition,
   deleteEdition,
   uploadEditionPage,
+  uploadEditionPDF,
   getEditionPages
 } from './routes/editions';
 import {
@@ -141,6 +142,13 @@ export default {
         const auth = await requireAuth(request, env);
         if (!auth.authorized) return auth.response!;
         return await uploadEditionPage(request, env);
+      }
+
+      // POST /api/admin/editions/:id/pdf
+      if (pathname.match(/^\/api\/admin\/editions\/[^\/]+\/pdf$/) && method === 'POST') {
+        const auth = await requireAuth(request, env);
+        if (!auth.authorized) return auth.response!;
+        return await uploadEditionPDF(request, env);
       }
 
       // GET /api/admin/editions/:id/pages

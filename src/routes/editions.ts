@@ -1,5 +1,70 @@
-import { Env, Edicion, Pagina, APIResponse } from '../types';
-import { errorResponse, successResponse, generateId } from '../lib/utils'; // Assuming generateId exists or we use crypto.randomUUID
+import { Env, Edicion, Pagina } from '../types';
+import { errorResponse, successResponse } from '../lib/utils';
+import { commitFileToGitHub } from '../lib/github';
+
+export async function uploadEditionPDF(request: Request, env: Env): Promise<Response> {
+    try {
+        const url = new URL(request.url);
+        const parts = url.pathname.split('/');
+        const id = parts[parts.indexOf('editions') + 1];
+
+        if (!id) return errorResponse('ID de edición no válido', 400, env);
+
+        const formData = await request.formData();
+        const fileEntry = formData.get('file');
+
+        if (!fileEntry || !(fileEntry instanceof File)) {
+            return errorResponse('Archivo PDF no proporcionado', 400, env);
+        }
+
+        const file = fileEntry;
+        const arrayBuffer = await file.arrayBuffer();
+        const contentBase64 = btoa(
+            new Uint8Array(arrayBuffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
+        );
+
+        // Git Configuration
+        const owner = 'erickrivasgomez';
+        const repo = 'bidxaagui-portfolio';
+        const path = `landing-page/assets/documents/${file.name}`;
+
+        let pdfUrl = '';
+
+        // 1. Logic to Push to GitHub
+        if (env.GITHUB_TOKEN) {
+            try {
+                await commitFileToGitHub(
+                    env.GITHUB_TOKEN,
+                    owner,
+                    repo,
+                    path,
+                    contentBase64,
+                    `Upload PDF for edition ${id}: ${file.name}`
+                );
+                // La URL final en el sitio estático será relativa o de github
+                pdfUrl = `../assets/documents/${file.name}`;
+            } catch (githubError: any) {
+                console.error('GitHub Push Error:', githubError);
+                // We continue but with warning or handle error
+                return errorResponse(`Error al subir a GitHub: ${githubError.message}`, 500, env);
+            }
+        } else {
+            console.warn('GITHUB_TOKEN not set. Skipping GitHub push.');
+            return errorResponse('GITHUB_TOKEN no configurado en el worker', 500, env);
+        }
+
+        // 2. Update Database
+        await env.DB.prepare(
+            'UPDATE ediciones SET pdf_url = ?, updated_at = ? WHERE id = ?'
+        ).bind(pdfUrl, new Date().toISOString(), id).run();
+
+        return successResponse('PDF procesado y subido a GitHub', { pdfUrl }, env);
+
+    } catch (error) {
+        console.error('Error handling PDF upload:', error);
+        return errorResponse('Error al procesar el PDF', 500, env);
+    }
+}
 
 export async function getEditions(request: Request, env: Env): Promise<Response> {
     try {
