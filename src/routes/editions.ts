@@ -27,9 +27,10 @@ export async function uploadEditionPDF(request: Request, env: Env): Promise<Resp
             customMetadata: { edition_id: id, filename: fileName }
         });
 
-        // 2. Set the URL to our own download endpoint
-        // This avoids GitHub's 25MB limit and memory issues
-        const pdfUrl = `/api/editions/${id}/pdf/download`;
+        // 2. Set the URL to our own download endpoint (Absolute URL)
+        // We use the absolute URL so the Frontend knows it's an external link 
+        // and doesn't try to prepend the GitHub path.
+        const pdfUrl = `https://api.bidxaagui.com/api/editions/${id}/pdf/download`;
 
         // 3. Update Database
         await env.DB.prepare(
