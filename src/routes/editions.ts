@@ -10,29 +10,17 @@ export async function uploadEditionPDF(request: Request, env: Env): Promise<Resp
 
         if (!id) return errorResponse('ID de edición no válido', 400, env);
 
-        const formData = await request.formData();
-        const fileEntry = formData.get('file');
+        const body = await request.json() as any;
+        const { fileName, base64: contentBase64 } = body;
 
-        if (!fileEntry || !(fileEntry instanceof File)) {
-            return errorResponse('Archivo PDF no proporcionado', 400, env);
+        if (!contentBase64 || !fileName) {
+            return errorResponse('Archivo PDF o nombre no proporcionado', 400, env);
         }
-
-        const file = fileEntry;
-        const arrayBuffer = await file.arrayBuffer();
-
-        // Memory-efficient Base64 conversion for Cloudflare Workers
-        const uint8 = new Uint8Array(arrayBuffer);
-        let binary = "";
-        const chunkSize = 8192;
-        for (let i = 0; i < uint8.length; i += chunkSize) {
-            binary += String.fromCharCode.apply(null, uint8.subarray(i, i + chunkSize) as any);
-        }
-        const contentBase64 = btoa(binary);
 
         // Git Configuration - Correct Root Path
         const owner = 'erickrivasgomez';
         const repo = 'bidxaagui-portfolio';
-        const path = `assets/documents/${file.name}`;
+        const path = `assets/documents/${fileName}`;
 
         let pdfUrl = '';
 

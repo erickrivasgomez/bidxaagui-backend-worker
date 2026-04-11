@@ -26,6 +26,7 @@ import {
   sendCampaign,
   sendTestCampaign
 } from './routes/campaigns';
+import { generateFormWithAI } from './routes/clinica-forms';
 
 export default {
   async fetch(
@@ -209,6 +210,17 @@ export default {
         const auth = await requireAuth(request, env);
         if (!auth.authorized) return auth.response!;
         return await sendCampaign(request, env);
+      }
+
+      // ============================================
+      // PROTECTED CLINICA ROUTES (AI FORMS)
+      // ============================================
+
+      // POST /api/admin/clinica/forms/generate
+      if (pathname === '/api/admin/clinica/forms/generate' && method === 'POST') {
+        const auth = await requireAuth(request, env);
+        if (!auth.authorized) return auth.response!;
+        return await generateFormWithAI(request, env);
       }
 
       // ============================================

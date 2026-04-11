@@ -18,8 +18,9 @@ export interface Env {
     // R2 Bucket
     BUCKET: R2Bucket;
 
-    // GitHub
+    // Interacciones APIs Externas
     GITHUB_TOKEN?: string;
+    GROQ_API_KEY?: string;
 }
 
 // Database types
