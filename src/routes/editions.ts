@@ -10,12 +10,21 @@ export async function uploadEditionPDF(request: Request, env: Env): Promise<Resp
 
         if (!id) return errorResponse('ID de edición no válido', 400, env);
 
-        const body = await request.json() as any;
-        const { fileName, base64: contentBase64 } = body;
+        const formData = await request.formData();
+        const file = formData.get('file') as File;
+        const fileName = formData.get('fileName') as string || file.name;
 
-        if (!contentBase64 || !fileName) {
+        if (!file || !fileName) {
             return errorResponse('Archivo PDF o nombre no proporcionado', 400, env);
         }
+
+        // Convert File to Base64 for GitHub API
+        const arrayBuffer = await file.arrayBuffer();
+        const contentBase64 = btoa(
+            Array.from(new Uint8Array(arrayBuffer))
+                .map(byte => String.fromCharCode(byte))
+                .join('')
+        );
 
         // Git Configuration - Correct Root Path
         const owner = 'erickrivasgomez';
@@ -36,11 +45,9 @@ export async function uploadEditionPDF(request: Request, env: Env): Promise<Resp
                     `Upload PDF for edition ${id}: ${fileName}`
                 );
                 // The correct URL for landing-page/pages/antroponomadas.html 
-                // to reach assets/documents/ at the root
                 pdfUrl = `../assets/documents/${fileName}`;
             } catch (githubError: any) {
                 console.error('GitHub Push Error:', githubError);
-                // We continue but with warning or handle error
                 return errorResponse(`Error al subir a GitHub: ${githubError.message}`, 500, env);
             }
         } else {
@@ -53,11 +60,11 @@ export async function uploadEditionPDF(request: Request, env: Env): Promise<Resp
             'UPDATE ediciones SET pdf_url = ?, updated_at = ? WHERE id = ?'
         ).bind(pdfUrl, new Date().toISOString(), id).run();
 
-        return successResponse('PDF procesado y subido a GitHub', { pdfUrl }, env);
+        return successResponse('PDF procesado y subido a GitHub (Binario)', { pdfUrl }, env);
 
     } catch (error) {
         console.error('Error handling PDF upload:', error);
-        return errorResponse('Error al procesar el PDF', 500, env);
+        return errorResponse('Error al procesar el PDF binario', 500, env);
     }
 }
 
