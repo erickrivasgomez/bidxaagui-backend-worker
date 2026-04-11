@@ -33,11 +33,11 @@ export async function uploadEditionPDF(request: Request, env: Env): Promise<Resp
                     repo,
                     path,
                     contentBase64,
-                    `Upload PDF for edition ${id}: ${file.name}`
+                    `Upload PDF for edition ${id}: ${fileName}`
                 );
                 // The correct URL for landing-page/pages/antroponomadas.html 
                 // to reach assets/documents/ at the root
-                pdfUrl = `../assets/documents/${file.name}`;
+                pdfUrl = `../assets/documents/${fileName}`;
             } catch (githubError: any) {
                 console.error('GitHub Push Error:', githubError);
                 // We continue but with warning or handle error
