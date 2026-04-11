@@ -27,6 +27,8 @@ export async function commitFileToGitHub(
     }
 
     // 2. Commit/Update file
+    console.log(`GitHub: Committing ${path} (${contentBase64.length} bytes base64)`);
+
     const putRes = await fetch(url, {
         method: 'PUT',
         headers: {
@@ -43,8 +45,9 @@ export async function commitFileToGitHub(
     });
 
     if (!putRes.ok) {
-        const error = await putRes.text();
-        throw new Error(`GitHub API Error: ${error}`);
+        const status = putRes.status;
+        const errorText = await putRes.text();
+        throw new Error(`GitHub API Error (HTTP ${status}): ${errorText}`);
     }
 
     const result = await putRes.json() as any;
