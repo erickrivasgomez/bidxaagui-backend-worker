@@ -16,7 +16,8 @@ import {
   deleteEdition,
   uploadEditionPage,
   uploadEditionPDF,
-  getEditionPages
+  getEditionPages,
+  downloadEditionPDF
 } from './routes/editions';
 import {
   getCampaigns,
@@ -229,15 +230,6 @@ export default {
 
       // GET /api/ediciones (Public list)
       if (pathname === '/api/ediciones' && method === 'GET') {
-        // Re-using getEditions logic but filtering for public is handled inside getEditions 
-        // OR we can make a specific handler.
-        // For now, let's reuse getEditions but note that getEditions requires admin auth check internaly?
-        // Let's check routes/editions.ts... Not checked, but assuming getEditions lists all.
-        // We should probably create a specific public handler or modify getEditions to accept a flag.
-        // Or just call it and filter in frontend for now as MVP.
-        // BUT getEditions might check for Bearer token.
-        // Let's look at getEditions implementation or import `getPublicEditions` if it existed.
-        // Since we don't have getPublicEditions, we will reuse getEditions but likely need to bypass auth check if it has one.
         // Let's assume getEditions is protected and we need a new one. 
         // Actually, let's just make it call getEditions and ensure it doesn't fail.
         return await getEditions(request, env);
@@ -246,6 +238,11 @@ export default {
       // GET /api/ediciones/:id/pages (Public pages)
       if (pathname.match(/^\/api\/ediciones\/[^\/]+\/pages$/) && method === 'GET') {
         return await getEditionPages(request, env);
+      }
+      
+      // GET /api/editions/:id/pdf/download (Public download)
+      if (pathname.match(/^\/api\/editions\/[^\/]+\/pdf\/download$/) && method === 'GET') {
+        return await downloadEditionPDF(request, env);
       }
 
       // GET /api/images/:key (Serve R2 images)

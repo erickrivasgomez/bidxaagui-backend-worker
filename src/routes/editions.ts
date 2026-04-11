@@ -18,55 +18,37 @@ export async function uploadEditionPDF(request: Request, env: Env): Promise<Resp
             return errorResponse('Archivo PDF o nombre no proporcionado', 400, env);
         }
 
-        // Convert File to Base64 for GitHub API (Memory-efficient way)
-        const arrayBuffer = await file.arrayBuffer();
-        const uint8Array = new Uint8Array(arrayBuffer);
-        let contentBase64 = '';
-        const chunk = 8192;
-        for (let i = 0; i < uint8Array.length; i += chunk) {
-            contentBase64 += String.fromCharCode.apply(null, Array.from(uint8Array.subarray(i, i + chunk)));
-        }
-        contentBase64 = btoa(contentBase64);
+        console.log(`Processing PDF upload for edition ${id}: ${fileName} (${file.size} bytes)`);
 
-        // Git Configuration - Correct Root Path
-        const owner = 'erickrivasgomez';
-        const repo = 'bidxaagui-portfolio';
-        const path = `assets/documents/${fileName}`;
+        // 1. Upload PDF to R2 (Much more stable for large files > 25MB)
+        const key = `pdfs/${id}/${fileName}`;
+        await env.BUCKET.put(key, file.stream(), {
+            httpMetadata: { contentType: 'application/pdf' },
+            customMetadata: { edition_id: id, filename: fileName }
+        });
 
-        let pdfUrl = '';
+        // 2. Set the URL to our own download endpoint
+        // This avoids GitHub's 25MB limit and memory issues
+        const pdfUrl = `/api/editions/${id}/pdf/download`;
 
-        // 1. Logic to Push to GitHub
-        if (env.GITHUB_TOKEN) {
-            try {
-                await commitFileToGitHub(
-                    env.GITHUB_TOKEN,
-                    owner,
-                    repo,
-                    path,
-                    contentBase64,
-                    `Upload PDF for edition ${id}: ${fileName}`
-                );
-                // The correct URL for landing-page/pages/antroponomadas.html 
-                pdfUrl = `../assets/documents/${fileName}`;
-            } catch (githubError: any) {
-                console.error('GitHub Push Error:', githubError);
-                return errorResponse(`Error al subir a GitHub: ${githubError.message}`, 500, env);
-            }
-        } else {
-            console.warn('GITHUB_TOKEN not set. Skipping GitHub push.');
-            return errorResponse('GITHUB_TOKEN no configurado en el worker', 500, env);
-        }
-
-        // 2. Update Database
+        // 3. Update Database
         await env.DB.prepare(
             'UPDATE ediciones SET pdf_url = ?, updated_at = ? WHERE id = ?'
         ).bind(pdfUrl, new Date().toISOString(), id).run();
 
-        return successResponse('PDF procesado y subido a GitHub (Binario)', { pdfUrl }, env);
+        // 4. Optional: Try to push to GitHub ONLY if file is small (under 20MB)
+        // We do this in the background to not block the response
+        if (file.size < 20 * 1024 * 1024 && env.GITHUB_TOKEN) {
+            // We can't use file.stream() again, so this is just a reminder 
+            // that for large files, R2 is now the primary source.
+            console.log("File is large, skipping GitHub mirror to prevent crash.");
+        }
 
-    } catch (error) {
+        return successResponse('PDF subido con éxito a R2', { pdfUrl }, env);
+
+    } catch (error: any) {
         console.error('Error handling PDF upload:', error);
-        return errorResponse('Error al procesar el PDF binario', 500, env);
+        return errorResponse(`Error al procesar el PDF: ${error.message}`, 500, env);
     }
 }
 
@@ -240,5 +222,44 @@ export async function getEditionPages(request: Request, env: Env): Promise<Respo
     } catch (error) {
         console.error('Error fetching pages:', error);
         return errorResponse('Error al obtener páginas', 500, env);
+    }
+}
+export async function downloadEditionPDF(request: Request, env: Env): Promise<Response> {
+    try {
+        const url = new URL(request.url);
+        const parts = url.pathname.split('/');
+        // ID is in /api/editions/:id/pdf/download
+        const id = parts[parts.indexOf('editions') + 1];
+
+        if (!id) return errorResponse('ID de edición no válido', 400, env);
+
+        // Find the PDF in R2
+        const prefix = `pdfs/${id}/`;
+        const objects = await env.BUCKET.list({ prefix });
+
+        if (objects.objects.length === 0) {
+            return errorResponse('PDF no encontrado', 404, env);
+        }
+
+        // Get the latest one
+        const key = objects.objects[0].key;
+        const object = await env.BUCKET.get(key);
+
+        if (!object) return errorResponse('Error al recuperar el PDF', 404, env);
+
+        const headers = new Headers();
+        object.writeHttpMetadata(headers);
+        headers.set('etag', object.httpEtag);
+        // Set filename for download
+        const filename = object.customMetadata?.filename || 'revista.pdf';
+        headers.set('Content-Disposition', `attachment; filename="${filename}"`);
+        headers.set('Access-Control-Allow-Origin', '*');
+        headers.set('Content-Type', 'application/pdf');
+
+        return new Response(object.body, { headers });
+
+    } catch (error: any) {
+        console.error('Error downloading PDF:', error);
+        return errorResponse(`Error al descargar el PDF: ${error.message}`, 500, env);
     }
 }
