@@ -18,13 +18,15 @@ export async function uploadEditionPDF(request: Request, env: Env): Promise<Resp
             return errorResponse('Archivo PDF o nombre no proporcionado', 400, env);
         }
 
-        // Convert File to Base64 for GitHub API
+        // Convert File to Base64 for GitHub API (Memory-efficient way)
         const arrayBuffer = await file.arrayBuffer();
-        const contentBase64 = btoa(
-            Array.from(new Uint8Array(arrayBuffer))
-                .map(byte => String.fromCharCode(byte))
-                .join('')
-        );
+        const uint8Array = new Uint8Array(arrayBuffer);
+        let contentBase64 = '';
+        const chunk = 8192;
+        for (let i = 0; i < uint8Array.length; i += chunk) {
+            contentBase64 += String.fromCharCode.apply(null, Array.from(uint8Array.subarray(i, i + chunk)));
+        }
+        contentBase64 = btoa(contentBase64);
 
         // Git Configuration - Correct Root Path
         const owner = 'erickrivasgomez';
