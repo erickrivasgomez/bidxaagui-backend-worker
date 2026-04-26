@@ -28,6 +28,14 @@ import {
   sendTestCampaign
 } from './routes/campaigns';
 import { generateFormWithAI } from './routes/clinica-forms';
+import {
+  getSuppliers,
+  getSupplier,
+  createSupplier,
+  updateSupplier,
+  deleteSupplier,
+  getSupplierCities
+} from './routes/suppliers';
 
 export default {
   async fetch(
@@ -222,6 +230,52 @@ export default {
         const auth = await requireAuth(request, env);
         if (!auth.authorized) return auth.response!;
         return await generateFormWithAI(request, env);
+      }
+
+      // ============================================
+      // PROTECTED ADMIN ROUTES - SUPPLIERS
+      // ============================================
+
+      // GET /api/admin/suppliers
+      if (pathname === '/api/admin/suppliers' && method === 'GET') {
+        const auth = await requireAuth(request, env);
+        if (!auth.authorized) return auth.response!;
+        return await getSuppliers(request, env);
+      }
+
+      // GET /api/admin/suppliers/cities
+      if (pathname === '/api/admin/suppliers/cities' && method === 'GET') {
+        const auth = await requireAuth(request, env);
+        if (!auth.authorized) return auth.response!;
+        return await getSupplierCities(request, env);
+      }
+
+      // GET /api/admin/suppliers/:id
+      if (pathname.match(/^\/api\/admin\/suppliers\/[^\/]+$/) && method === 'GET') {
+        const auth = await requireAuth(request, env);
+        if (!auth.authorized) return auth.response!;
+        return await getSupplier(request, env);
+      }
+
+      // POST /api/admin/suppliers
+      if (pathname === '/api/admin/suppliers' && method === 'POST') {
+        const auth = await requireAuth(request, env);
+        if (!auth.authorized) return auth.response!;
+        return await createSupplier(request, env);
+      }
+
+      // PUT /api/admin/suppliers/:id
+      if (pathname.match(/^\/api\/admin\/suppliers\/[^\/]+$/) && method === 'PUT') {
+        const auth = await requireAuth(request, env);
+        if (!auth.authorized) return auth.response!;
+        return await updateSupplier(request, env);
+      }
+
+      // DELETE /api/admin/suppliers/:id
+      if (pathname.match(/^\/api\/admin\/suppliers\/[^\/]+$/) && method === 'DELETE') {
+        const auth = await requireAuth(request, env);
+        if (!auth.authorized) return auth.response!;
+        return await deleteSupplier(request, env);
       }
 
       // ============================================
